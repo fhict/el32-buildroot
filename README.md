@@ -1,7 +1,3 @@
-########################################
-### UNDER CONSTRUCTION - DO NOT FORK ###
-########################################
-
 el32-buildroot
 ==============
 Buildroot fork for EL32 Embedded Linux course.

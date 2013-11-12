@@ -12,12 +12,12 @@ Setup
 -----
 Install required tools:
 ```
-$ sudo apt-get install build-essential libncurses5-dev git parted kpartx extlinux qemu qemu-system putty
+$ sudo apt-get install build-essential libncurses5-dev git subversion parted kpartx extlinux qemu qemu-system putty
 ```
 
 Clone this repository:
 ```
-git clone --depth 1 https://github.com/dortmans/el32-buildroot.git buildroot
+git clone --depth 1 https://github.com/fhict/el32-buildroot.git buildroot
 ```
 
 Soekris NET4801

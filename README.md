@@ -8,7 +8,7 @@ Setup
 -----
 Install required tools:
 ```
-$ sudo apt-get install build-essential libncurses5-dev whois git subversion parted kpartx extlinux qemu qemu-system putty
+$ sudo apt-get install -y build-essential libncurses5-dev whois git subversion parted kpartx extlinux qemu qemu-system putty
 ```
 
 Clone this repository:

@@ -8,7 +8,7 @@ Setup
 -----
 Install required tools:
 ```
-$ sudo apt-get install build-essential libncurses5-dev git subversion parted kpartx extlinux qemu qemu-system putty
+$ sudo apt-get install build-essential libncurses5-dev whois git subversion parted kpartx extlinux qemu qemu-system putty
 ```
 
 Clone this repository:
@@ -62,7 +62,7 @@ $ sudo umount /dev/mmcblk0*
 $ sudo dd if=output/images/rpi.img of=/dev/mmcblk0 bs=4M
 $ sudo sync
 ```
-Above command assumes the CF card reader is connected as /dev/mmcblk0. Check the output of the command `dmesg | tail` directly after inserting a SD card to see if this is the case. If not change the device name to comply with your configuration.
+Above command assumes the SD card reader is connected as /dev/mmcblk0. Check the output of the command `dmesg | tail` directly after inserting a SD card to see if this is the case. If not change the device name to comply with your configuration.
 
 To test the kernel and rootfs with QEMU first download a suitable qemu compatible kernel:
 ```

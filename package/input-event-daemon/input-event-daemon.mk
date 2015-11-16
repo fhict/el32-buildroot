@@ -5,7 +5,7 @@
 ################################################################################
 
 INPUT_EVENT_DAEMON_VERSION = v0.1.3
-INPUT_EVENT_DAEMON_SITE = http://github.com/gandro/input-event-daemon/tarball/$(INPUT_EVENT_DAEMON_VERSION)
+INPUT_EVENT_DAEMON_SITE = $(call github,gandro,input-event-daemon,$(INPUT_EVENT_DAEMON_VERSION))
 INPUT_EVENT_DAEMON_LICENSE = input-event-daemon license
 INPUT_EVENT_DAEMON_LICENSE_FILES = README
 
@@ -18,21 +18,21 @@ endef
 define INPUT_EVENT_DAEMON_INSTALL_TARGET_CMDS
 	$(INSTALL) -m 755 -D $(@D)/input-event-daemon \
 		$(TARGET_DIR)/usr/bin/input-event-daemon
-	[ -f $(TARGET_DIR)/etc/input-event-daemon.conf ] || \
-		$(INSTALL) -m 644 -D $(@D)/docs/sample.conf \
-			$(TARGET_DIR)/etc/input-event-daemon.conf
-	[ -f $(TARGET_DIR)/etc/init.d/S99input-event-daemon ] || \
-		$(INSTALL) -m 0755 -D package/input-event-daemon/S99input-event-daemon \
-			$(TARGET_DIR)/etc/init.d/S99input-event-daemon
+	$(INSTALL) -m 644 -D $(@D)/docs/sample.conf \
+		$(TARGET_DIR)/etc/input-event-daemon.conf
 endef
 
-define INPUT_EVENT_DAEMON_CLEAN_CMDS
-	$(MAKE) -C $(@D) clean
+define INPUT_EVENT_DAEMON_INSTALL_INIT_SYSV
+	$(INSTALL) -m 0755 -D package/input-event-daemon/S99input-event-daemon \
+		$(TARGET_DIR)/etc/init.d/S99input-event-daemon
 endef
 
-define INPUT_EVENT_DAEMON_UNINSTALL_TARGET_CMDS
-	rm -f $(TARGET_DIR)/usr/bin/input-event-daemon
-	rm -f $(TARGET_DIR)/etc/input-event-daemon.conf
+define INPUT_EVENT_DAEMON_INSTALL_INIT_SYSTEMD
+	$(INSTALL) -D -m 644 package/input-event-daemon/input-event-daemon.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/input-event-daemon.service
+	mkdir -p $(TARGET_DIR)/etc/systemd/system/multi-user.target.wants
+	ln -sf /usr/lib/systemd/system/input-event-daemon.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/input-event-daemon.service
 endef
 
 $(eval $(generic-package))

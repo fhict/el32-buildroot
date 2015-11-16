@@ -5,7 +5,6 @@ export PATH=\
 /sbin:\
 /usr/bin:\
 /usr/sbin:\
-/usr/bin/X11:\
 /usr/local/bin
 
 # If running interactively, then:
@@ -34,18 +33,30 @@ if [ "$PS1" ]; then
     export INPUTRC=/etc/inputrc
     export DMALLOC_OPTIONS=debug=0x34f47d83,inter=100,log=logfile
 
-    ### Some aliases
-    alias ps2='ps facux '
-    alias ps1='ps faxo "%U %t %p %a" '
-    alias af='ps af'
-    alias cls='clear'
-    alias df='df -h'
-    alias indent='indent -bad -bap -bbo -nbc -br -brs -c33 -cd33 -ncdb -ce -ci4 -cli0 -cp33 -cs -d0 -di1 -nfc1 -nfca -hnl -i4 -ip0 -l75 -lp -npcs -npsl -nsc -nsob -nss -ts4 '
-    #alias bc='bc -l'
-    alias minicom='minicom -c on'
-    alias calc='calc -Cd '
-    alias bc='calc -Cd '
 fi;
+
+if [ -z "$LANG" ]; then
+  if [ -n $HOME ] && [ -r $HOME/.config/locale.conf ]; then
+    . "$HOME/.config/locale.conf"
+  elif [ -r /etc/locale.conf ]; then
+    . /etc/locale.conf
+  fi
+fi
+
+LANG=${LANG:-C}
+export LANG
+[ -n "$LC_CTYPE" ]          && export LC_CTYPE
+[ -n "$LC_NUMERIC" ]        && export LC_NUMERIC
+[ -n "$LC_TIME" ]           && export LC_TIME
+[ -n "$LC_COLLATE" ]        && export LC_COLLATE
+[ -n "$LC_MONETARY" ]       && export LC_MONETARY
+[ -n "$LC_MESSAGES" ]       && export LC_MESSAGES
+[ -n "$LC_PAPER" ]          && export LC_PAPER
+[ -n "$LC_NAME" ]           && export LC_NAME
+[ -n "$LC_ADDRESS" ]        && export LC_ADDRESS
+[ -n "$LC_TELEPHONE" ]      && export LC_TELEPHONE
+[ -n "$LC_MEASUREMENT" ]    && export LC_MEASUREMENT
+[ -n "$LC_IDENTIFICATION" ] && export LC_IDENTIFICATION
 
 # Source configuration files from /etc/profile.d
 for i in /etc/profile.d/*.sh ; do

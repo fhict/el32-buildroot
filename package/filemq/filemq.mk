@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-FILEMQ_VERSION = 8fac5140dd
-FILEMQ_SITE = git://github.com/zeromq/filemq.git
+FILEMQ_VERSION = acf6c0e003fee938994ad803aa7b78245dca57ba
+FILEMQ_SITE = $(call github,zeromq,filemq,$(FILEMQ_VERSION))
 
 FILEMQ_AUTORECONF = YES
 FILEMQ_CONF_ENV = fmq_have_asciidoc=no

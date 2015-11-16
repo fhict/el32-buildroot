@@ -4,14 +4,20 @@
 #
 ################################################################################
 
-E2FSPROGS_VERSION = 1.42.8
-E2FSPROGS_SITE = http://downloads.sourceforge.net/project/e2fsprogs/e2fsprogs/v$(E2FSPROGS_VERSION)
+E2FSPROGS_VERSION = 1.42.13
+E2FSPROGS_SOURCE = e2fsprogs-$(E2FSPROGS_VERSION).tar.xz
+E2FSPROGS_SITE = $(BR2_KERNEL_MIRROR)/linux/kernel/people/tytso/e2fsprogs/v$(E2FSPROGS_VERSION)
 E2FSPROGS_LICENSE = GPLv2, libuuid BSD-3c, libss and libet MIT-like with advertising clause
 E2FSPROGS_LICENSE_FILES = COPYING lib/uuid/COPYING lib/ss/mit-sipb-copyright.h lib/et/internal.h
+E2FSPROGS_INSTALL_STAGING = YES
+E2FSPROGS_INSTALL_STAGING_OPTS = DESTDIR=$(STAGING_DIR) install-libs
 
-E2FSPROGS_CONF_OPT = \
-	--disable-tls \
-	--enable-elf-shlibs \
+# e4defrag doesn't build on older systems like RHEL5.x, and we don't
+# need it on the host anyway.
+HOST_E2FSPROGS_CONF_OPTS += --disable-defrag
+
+E2FSPROGS_CONF_OPTS = \
+	$(if $(BR2_STATIC_LIBS),,--enable-elf-shlibs) \
 	$(if $(BR2_PACKAGE_E2FSPROGS_DEBUGFS),,--disable-debugfs) \
 	$(if $(BR2_PACKAGE_E2FSPROGS_E2IMAGE),,--disable-imager) \
 	$(if $(BR2_PACKAGE_E2FSPROGS_E4DEFRAG),,--disable-defrag) \
@@ -21,15 +27,26 @@ E2FSPROGS_CONF_OPT = \
 	--disable-libuuid \
 	--enable-fsck \
 	--disable-e2initrd-helper \
-	--disable-testio-debug
+	--disable-testio-debug \
+	--disable-rpath
+
+ifeq ($(BR2_nios2),y)
+E2FSPROGS_CONF_ENV += ac_cv_func_fallocate=no
+endif
+
+ifeq ($(BR2_NEEDS_GETTEXT_IF_LOCALE),y)
+# util-linux libuuid pulls in libintl if needed, so ensure we also
+# link against it, otherwise static linking fails
+E2FSPROGS_CONF_ENV += LIBS=-lintl
+endif
 
 E2FSPROGS_DEPENDENCIES = host-pkgconf util-linux
 
-E2FSPROGS_MAKE_OPT = \
+E2FSPROGS_MAKE_OPTS = \
 	LDCONFIG=true
 
 define HOST_E2FSPROGS_INSTALL_CMDS
- $(HOST_MAKE_ENV) $(MAKE) -C $(@D) install install-libs
+	$(HOST_MAKE_ENV) $(MAKE) -C $(@D) install install-libs
 endef
 # we don't have a host-util-linux
 HOST_E2FSPROGS_DEPENDENCIES = host-pkgconf
@@ -89,6 +106,22 @@ ifeq ($(BR2_PACKAGE_E2FSPROGS_E2FSCK),y)
 E2FSPROGS_POST_INSTALL_TARGET_HOOKS += E2FSPROGS_TARGET_E2FSCK_SYMLINKS
 endif
 
+# Remove busybox tune2fs and e2label, since we want the e2fsprogs full
+# blown variants to take precedence, but they are not installed in the
+# same location.
+ifeq ($(BR2_PACKAGE_BUSYBOX),y)
+E2FSPROGS_DEPENDENCIES += busybox
+
+define E2FSPROGS_REMOVE_BUSYBOX_APPLETS
+	$(RM) -f $(TARGET_DIR)/bin/chattr
+	$(RM) -f $(TARGET_DIR)/bin/lsattr
+	$(RM) -f $(TARGET_DIR)/sbin/fsck
+	$(RM) -f $(TARGET_DIR)/sbin/tune2fs
+	$(RM) -f $(TARGET_DIR)/sbin/e2label
+endef
+E2FSPROGS_POST_INSTALL_TARGET_HOOKS += E2FSPROGS_REMOVE_BUSYBOX_APPLETS
+endif
+
 define E2FSPROGS_TARGET_TUNE2FS_SYMLINK
 	ln -sf e2label $(TARGET_DIR)/usr/sbin/tune2fs
 endef
@@ -103,6 +136,15 @@ endef
 
 ifeq ($(BR2_PACKAGE_E2FSPROGS_FINDFS),y)
 E2FSPROGS_POST_INSTALL_TARGET_HOOKS += E2FSPROGS_TARGET_FINDFS_SYMLINK
+endif
+
+# systemd really wants to have fsck in /sbin
+define E2FSPROGS_TARGET_FSCK_SYMLINK
+	ln -sf ../usr/sbin/fsck $(TARGET_DIR)/sbin/fsck
+endef
+
+ifeq ($(BR2_PACKAGE_E2FSPROGS_FSCK),y)
+E2FSPROGS_POST_INSTALL_TARGET_HOOKS += E2FSPROGS_TARGET_FSCK_SYMLINK
 endif
 
 $(eval $(autotools-package))

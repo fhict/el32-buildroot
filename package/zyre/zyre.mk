@@ -4,14 +4,13 @@
 #
 ################################################################################
 
-ZYRE_VERSION = 44a57a449a
-ZYRE_SITE = git://github.com/zeromq/zyre.git
+ZYRE_VERSION = a351468b7d313fc90c446668122365851a9c60e4
+ZYRE_SITE = $(call github,zeromq,zyre,$(ZYRE_VERSION))
 ZYRE_LICENSE = LGPLv3+
 ZYRE_LICENSE_FILES = COPYING COPYING.LESSER
 ZYRE_INSTALL_STAGING = YES
-ZYRE_DEPENDENCIES = filemq
+ZYRE_DEPENDENCIES = czmq zeromq host-pkgconf
 ZYRE_AUTORECONF = YES
-ZYRE_AUTORECONF_OPT = --install --force --verbose
 
 define ZYRE_CREATE_CONFIG_DIR
 	mkdir -p $(@D)/config

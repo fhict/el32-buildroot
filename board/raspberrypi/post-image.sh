@@ -67,73 +67,29 @@ sudo mkfs -t ${FSTYPE} ${FSOPTIONS} ${PARTITION} 1>/dev/null 2>/dev/null
 sudo parted -s ${IMAGE} set 1 lba on
 
 #
+# Mount boot partition
+#
+PARTITION=${MAPPERDEVICE}1
+sudo mount ${PARTITION} ${MOUNTPOINT}
+
+#
 # Install firmware
 #
 FIRMWARE="${IMAGESDIR}/rpi-firmware"
-PARTITION=${MAPPERDEVICE}1
 echo "Install Firmware"
-sudo mount ${PARTITION} ${MOUNTPOINT}
-#sudo cp ${FIRMWARE}/* ${MOUNTPOINT}
-sudo cp ${FIRMWARE}/bootcode.bin ${MOUNTPOINT}
-sudo cp ${FIRMWARE}/start.elf ${MOUNTPOINT}
-sudo cp ${FIRMWARE}/fixup.dat ${MOUNTPOINT}
-echo 'dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait' > ${FIRMWARE}/cmdline.txt
-sudo cp ${FIRMWARE}/cmdline.txt ${MOUNTPOINT}
-cat > ${FIRMWARE}/config.txt << EOF
-# uncomment if you get no picture on HDMI for a default "safe" mode
-#hdmi_safe=1
-
-# uncomment this if your display has a black border of unused pixels visible
-# and your display can output without overscan
-#disable_overscan=1
-
-# uncomment the following to adjust overscan. Use positive numbers if console
-# goes off screen, and negative if there is too much border
-#overscan_left=16
-#overscan_right=16
-#overscan_top=16
-#overscan_bottom=16
-
-# uncomment to force a console size. By default it will be display's size minus
-# overscan.
-#framebuffer_width=1280
-#framebuffer_height=720
-
-# uncomment if hdmi display is not detected and composite is being output
-#hdmi_force_hotplug=1
-
-# uncomment to force a specific HDMI mode (this will force VGA)
-#hdmi_group=1
-#hdmi_mode=1
-
-# uncomment to force a HDMI mode rather than DVI. This can make audio work in
-# DMT (computer monitor) modes
-#hdmi_drive=2
-
-# uncomment to increase signal to HDMI, if you have interference, blanking, or
-# no display
-#config_hdmi_boost=4
-
-# uncomment for composite PAL
-#sdtv_mode=2
-
-#uncomment to overclock the arm. 700 MHz is the default.
-#arm_freq=800
-
-# for more options see http://elinux.org/RPi_config.txt
-EOF
-sudo cp ${FIRMWARE}/config.txt ${MOUNTPOINT}
-sudo sync
-sudo umount ${MOUNTPOINT}
+sudo cp ${FIRMWARE}/* ${MOUNTPOINT}
 
 #
 # Install kernel
 #
 KERNEL=${IMAGESDIR}/zImage
-PARTITION=${MAPPERDEVICE}1
 echo "Install Kernel"
-sudo mount ${PARTITION} ${MOUNTPOINT}
-sudo cp ${KERNEL} ${MOUNTPOINT}/kernel.img
+sudo cp ${IMAGESDIR}/*.dtb ${MOUNTPOINT}
+sudo ${IMAGESDIR}/../host/usr/bin/mkknlimg ${KERNEL} ${MOUNTPOINT}/zImage
+
+#
+# Unmount boot partition
+#
 sudo sync
 sudo umount ${MOUNTPOINT}
 
@@ -148,13 +104,22 @@ echo "Format ${LABEL} partition"
 sudo mkfs -t ${FSTYPE} ${FSOPTIONS} ${PARTITION} 1>/dev/null 2>/dev/null
 
 #
+# Mount root partition
+#
+PARTITION=${MAPPERDEVICE}2
+sudo mount ${PARTITION} ${MOUNTPOINT}
+
+#
 # Install rootfs
 #
 ROOTFS=${IMAGESDIR}/rootfs.tar
-PARTITION=${MAPPERDEVICE}2
 echo "Install Root FileSystem"
-sudo mount ${PARTITION} ${MOUNTPOINT}
-sudo tar -xaf ${ROOTFS} -C ${MOUNTPOINT}
+#sudo tar -xaf ${ROOTFS} -C ${MOUNTPOINT}
+sudo tar xf ${ROOTFS} -C ${MOUNTPOINT}
+
+#
+# Unmount root partition
+#
 sudo sync
 sudo umount ${MOUNTPOINT}
 

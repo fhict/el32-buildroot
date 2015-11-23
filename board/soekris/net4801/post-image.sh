@@ -3,6 +3,8 @@
 # Buildroot post-image script for Soekris board
 #
 # Author: e.dortmans@fontys.nl
+set -euo pipefail
+
 
 IMAGESDIR=$1
 
@@ -18,7 +20,7 @@ IMAGE=$IMAGESDIR/$NAME
 [ -f $IMAGE ] && echo "Deleting old image" && rm $IMAGE
 echo "Creating fresh image file '$NAME' of size $SIZE$UNIT"
 #dd if=/dev/zero of=$IMAGE bs=1$UNIT count=$SIZE 2>/dev/null
-dd if=/dev/zero of=$IMAGE bs=1 seek=$SIZE$UNIT count=0 2>/dev/null
+dd if=/dev/zero of=$IMAGE bs=1 seek=$SIZE$UNIT count=0
 
 #
 # Partition it
@@ -38,11 +40,11 @@ sudo parted $IMAGE set 1 boot on
 #
 PART=1
 LABEL=ROOT
-LOOPDEVICE=`sudo losetup -f|sed -e 's|/dev/||'`
-MAPPERDEVICE=/dev/mapper/${LOOPDEVICE}p${PART}
+LOOPDEVICE=$(sudo losetup -f|sed -e 's|/dev/||')
+MAPPERDEVICE="/dev/mapper/${LOOPDEVICE}p${PART}"
 echo "Format partition"
-sudo kpartx -a $IMAGE 1>/dev/null 2>/dev/null
-sudo mkfs -v -t $FSTYPE -L $LABEL $MAPPERDEVICE 1>/dev/null 2>/dev/null
+sudo kpartx -a $IMAGE
+sudo mkfs -v -t $FSTYPE -L $LABEL $MAPPERDEVICE
 # tune2fs .....
 
 #
@@ -63,8 +65,9 @@ sudo tar -xaf $ROOTFS -C $MOUNTPOINT
 # Assume extlinux is installed. If not: sudo apt-get install extlinux
 #
 echo "Install Bootloader"
-sudo extlinux --install $MOUNTPOINT/boot/extlinux 1>/dev/null 2>/dev/null
-dd conv=notrunc bs=440 count=1 if=/usr/lib/extlinux/mbr.bin of=$IMAGE 1>/dev/null 2>/dev/null
+MBR_BIN=$(find /usr/lib -name "mbr.bin")
+sudo extlinux --install $MOUNTPOINT/boot/extlinux
+dd conv=notrunc bs=440 count=1 if=${MBR_BIN} of=$IMAGE
 
 #
 # Cleanup
@@ -72,7 +75,7 @@ dd conv=notrunc bs=440 count=1 if=/usr/lib/extlinux/mbr.bin of=$IMAGE 1>/dev/nul
 echo "Cleanup"
 sudo umount $MOUNTPOINT
 sudo rm -rf $MOUNTPOINT
-sudo kpartx -d $IMAGE 1>/dev/null 2>/dev/null
+sudo kpartx -d $IMAGE
 
 echo "DONE."
 

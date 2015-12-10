@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Buildroot post-image script for Raspberry Pi (rpi)
 #

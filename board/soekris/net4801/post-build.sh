@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Buildroot post-build script for Soekris board
 #

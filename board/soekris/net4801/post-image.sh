@@ -1,14 +1,33 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Buildroot post-image script for Soekris board
 #
 # Author: e.dortmans@fontys.nl
-set -euo pipefail
-
 
 IMAGESDIR=$1
 
-echo "This script requires root (sudo) permission."
+# Check if we're root and if we have access to sudo
+if [[ $EUID -ne 0 ]]; then
+  if ! [ -x "$(command -v sudo)" ]; then
+      echo "Notice: This script requires root privileges but 'sudo' not found, executing it using 'su' (you'll be asked for root password)"
+      exec su "root" "$0" "$@"
+  else
+    echo "Notice: This script requires root privileges, we'll use 'sudo' for that"
+    SU="sudo"
+  fi
+else
+  SU=""
+fi
+
+# Check if required additional software is installed
+if ! [ -x "$(command -v parted)" ]; then
+      echo "Error: This script requires 'parted' but it's not installed on your system!"
+      exit 1
+fi
+if ! [ -x "$(command -v kpartx)" ]; then
+      echo "Error: This script requires 'kpartx' but it's not installed on your system!"
+      exit 1
+fi
 
 #
 # Create CF image
@@ -29,9 +48,9 @@ FSTYPE=ext4
 BEGIN=2048
 END=100%
 echo "Partition it"
-sudo parted $IMAGE mktable msdos
-sudo parted -a opt $IMAGE unit s mkpart primary $FSTYPE $BEGIN $END
-sudo parted $IMAGE set 1 boot on
+$SU parted $IMAGE mktable msdos
+$SU parted -a opt $IMAGE unit s mkpart primary $FSTYPE $BEGIN $END
+$SU parted $IMAGE set 1 boot on
 #parted $IMAGE unit s print
 
 #
@@ -40,11 +59,11 @@ sudo parted $IMAGE set 1 boot on
 #
 PART=1
 LABEL=ROOT
-LOOPDEVICE=$(sudo losetup -f|sed -e 's|/dev/||')
+LOOPDEVICE=`$SU losetup -f|sed -e 's|/dev/||'`
 MAPPERDEVICE="/dev/mapper/${LOOPDEVICE}p${PART}"
 echo "Format partition"
-sudo kpartx -a $IMAGE
-sudo mkfs -v -t $FSTYPE -L $LABEL $MAPPERDEVICE
+$SU kpartx -a $IMAGE
+$SU mkfs -v -t $FSTYPE -L $LABEL $MAPPERDEVICE
 # tune2fs .....
 
 #
@@ -53,11 +72,11 @@ sudo mkfs -v -t $FSTYPE -L $LABEL $MAPPERDEVICE
 ROOTFS=$IMAGESDIR/rootfs.tar
 MOUNTPOINT=/mnt/rootfs
 echo "Install Root Filesystem"
-[ -e $MOUNTPOINT ] && sudo chattr -Ri $MOUNTPOINT && sudo rm -rf $MOUNTPOINT
+[ -e $MOUNTPOINT ] && $SU chattr -Ri $MOUNTPOINT && $SU rm -rf $MOUNTPOINT
 # http://www.linuxquestions.org/questions/linux-server-73/cannot-remove-file-operation-not-permitted-836139/
-sudo mkdir $MOUNTPOINT
-sudo mount -t $FSTYPE $MAPPERDEVICE $MOUNTPOINT
-sudo tar -xaf $ROOTFS -C $MOUNTPOINT
+$SU mkdir $MOUNTPOINT
+$SU mount -t $FSTYPE $MAPPERDEVICE $MOUNTPOINT
+$SU tar -xaf $ROOTFS -C $MOUNTPOINT
 
 #
 # Install bootloader
@@ -65,17 +84,18 @@ sudo tar -xaf $ROOTFS -C $MOUNTPOINT
 # Assume extlinux is installed. If not: sudo apt-get install extlinux
 #
 echo "Install Bootloader"
-MBR_BIN=$(find /usr/lib -name "mbr.bin")
-sudo extlinux --install $MOUNTPOINT/boot/extlinux
+#MBR_BIN=$(find /usr/lib -name "mbr.bin")
+MBR_BIN=/usr/lib/extlinux/mbr.bin
+$SU extlinux --install $MOUNTPOINT/boot/extlinux
 dd conv=notrunc bs=440 count=1 if=${MBR_BIN} of=$IMAGE
 
 #
 # Cleanup
 #
 echo "Cleanup"
-sudo umount $MOUNTPOINT
-sudo rm -rf $MOUNTPOINT
-sudo kpartx -d $IMAGE
+$SU umount $MOUNTPOINT
+$SU rm -rf $MOUNTPOINT
+$SU kpartx -d $IMAGE
 
 echo "DONE."
 

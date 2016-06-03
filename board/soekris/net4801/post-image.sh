@@ -59,10 +59,11 @@ $SU parted $IMAGE set 1 boot on
 #
 PART=1
 LABEL=ROOT
-LOOPDEVICE=`$SU losetup -f|sed -e 's|/dev/||'`
+LOOPDEVICE=`$SU losetup -f --show $IMAGE|sed -e 's|/dev/||'`
 MAPPERDEVICE="/dev/mapper/${LOOPDEVICE}p${PART}"
 echo "Format partition"
-$SU kpartx -a $IMAGE
+$SU kpartx -a /dev/${LOOPDEVICE}
+sleep 1
 $SU mkfs -v -t $FSTYPE -L $LABEL $MAPPERDEVICE
 # tune2fs .....
 
@@ -85,7 +86,7 @@ $SU tar -xaf $ROOTFS -C $MOUNTPOINT
 #
 echo "Install Bootloader"
 #MBR_BIN=$(find /usr/lib -name "mbr.bin")
-MBR_BIN=/usr/lib/extlinux/mbr.bin
+MBR_BIN=/usr/lib/EXTLINUX/mbr.bin
 $SU extlinux --install $MOUNTPOINT/boot/extlinux
 dd conv=notrunc bs=440 count=1 if=${MBR_BIN} of=$IMAGE
 

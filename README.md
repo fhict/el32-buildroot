@@ -35,7 +35,7 @@ $ make raspberrypi2_defconfig
 $ make
 ```
 
-If you have a *Raspberry PI 3 B* us the following defconfig:
+If you have a *Raspberry PI 3 B* use the following defconfig:
 ```
 $ cd buildroot
 $ make raspberrypi3_defconfig

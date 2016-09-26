@@ -1,3 +1,2 @@
-# From http://sourceforge.net/projects/pcre/files/pcre/8.37/
-md5	ed91be292cb01d21bc7e526816c26981	pcre-8.37.tar.bz2
-sha1	4c629b3f582366fae4e8912f0d9fa3140347d6e7	pcre-8.37.tar.bz2
+# Locally calculated after checking pgp signature
+sha256	b858099f82483031ee02092711689e7245586ada49e534a06e678b8ea9549e8b	pcre-8.39.tar.bz2

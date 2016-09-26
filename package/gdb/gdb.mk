@@ -20,12 +20,7 @@ GDB_SOURCE = gdb-$(GDB_VERSION).tar.gz
 GDB_FROM_GIT = y
 endif
 
-# Use .tar.bz2 for 7.7.x since there was no .tar.xz release back then
-ifneq ($(filter 7.7.%,$(GDB_VERSION)),)
-GDB_SOURCE = gdb-$(GDB_VERSION).tar.bz2
-endif
-
-GDB_LICENSE = GPLv2+ LGPLv2+ GPLv3+ LGPLv3+
+GDB_LICENSE = GPLv2+, LGPLv2+, GPLv3+, LGPLv3+
 GDB_LICENSE_FILES = COPYING COPYING.LIB COPYING3 COPYING3.LIB
 
 # We only want gdbserver and not the entire debugger.
@@ -42,6 +37,13 @@ endif
 # also need ncurses.
 HOST_GDB_DEPENDENCIES = host-expat host-ncurses
 
+# Starting with gdb 7.10, gdb wants to re-generate its documentation.
+# We were trying to avoid that by patching the Makefiles, but it wasn't
+# working in all situations. So, we simply add a dependency on
+# host-texinfo in all case.
+GDB_DEPENDENCIES += host-texinfo
+HOST_GDB_DEPENDENCIES += host-texinfo
+
 # Apply the Xtensa specific patches
 XTENSA_CORE_NAME = $(call qstrip, $(BR2_XTENSA_CORE_NAME))
 ifneq ($(XTENSA_CORE_NAME),)
@@ -53,6 +55,11 @@ GDB_PRE_PATCH_HOOKS += GDB_XTENSA_PRE_PATCH
 HOST_GDB_PRE_PATCH_HOOKS += GDB_XTENSA_PRE_PATCH
 endif
 
+ifeq ($(GDB_FROM_GIT),y)
+GDB_DEPENDENCIES += host-flex host-bison
+HOST_GDB_DEPENDENCIES += host-flex host-bison
+endif
+
 # When gdb sources are fetched from the binutils-gdb repository, they
 # also contain the binutils sources, but binutils shouldn't be built,
 # so we disable it.
@@ -61,6 +68,13 @@ GDB_DISABLE_BINUTILS_CONF_OPTS = \
 	--disable-ld \
 	--disable-gas
 
+# Starting with gdb 7.11, the bundled gnulib tries to use
+# rpl_gettimeofday (gettimeofday replacement) due to the code being
+# unable to determine if the replacement function should be used or
+# not when cross-compiling with uClibc or musl as C libraries. So use
+# gl_cv_func_gettimeofday_clobber=no to not use rpl_gettimeofday,
+# assuming musl and uClibc have a properly working gettimeofday
+# implementation.
 GDB_CONF_ENV = \
 	ac_cv_type_uintptr_t=yes \
 	gt_cv_func_gettext_libintl=yes \
@@ -70,7 +84,8 @@ GDB_CONF_ENV = \
 	bash_cv_must_reinstall_sighandlers=no \
 	bash_cv_func_sigsetjmp=present \
 	bash_cv_have_mbstate_t=yes \
-	gdb_cv_func_sigsetjmp=yes
+	gdb_cv_func_sigsetjmp=yes \
+	gl_cv_func_gettimeofday_clobber=no
 
 # The shared only build is not supported by gdb, so enable static build for
 # build-in libraries with --enable-static.
@@ -105,6 +120,14 @@ GDB_CONF_OPTS += --with-libexpat-prefix=$(STAGING_DIR)/usr
 GDB_DEPENDENCIES += expat
 else
 GDB_CONF_OPTS += --without-expat
+endif
+
+ifeq ($(BR2_PACKAGE_XZ),y)
+GDB_CONF_OPTS += --with-lzma
+GDB_CONF_OPTS += --with-liblzma-prefix=$(STAGING_DIR)/usr
+GDB_DEPENDENCIES += xz
+else
+GDB_CONF_OPTS += --without-lzma
 endif
 
 ifeq ($(BR2_PACKAGE_ZLIB),y)
@@ -149,8 +172,7 @@ HOST_GDB_CONF_OPTS = \
 	--enable-threads \
 	--disable-werror \
 	--without-included-gettext \
-	$(GDB_DISABLE_BINUTILS_CONF_OPTS) \
-	--disable-sim
+	$(GDB_DISABLE_BINUTILS_CONF_OPTS)
 
 ifeq ($(BR2_PACKAGE_HOST_GDB_TUI),y)
 HOST_GDB_CONF_OPTS += --enable-tui
@@ -165,13 +187,18 @@ else
 HOST_GDB_CONF_OPTS += --without-python
 endif
 
-ifeq ($(GDB_FROM_GIT),y)
-GDB_DEPENDENCIES += host-texinfo
-HOST_GDB_DEPENDENCIES += host-texinfo
+# workaround a bug if in-tree build is used for bfin sim
+define HOST_GDB_BFIN_SIM_WORKAROUND
+	$(RM) $(@D)/sim/common/tconfig.h
+endef
+
+ifeq ($(BR2_PACKAGE_HOST_GDB_SIM),y)
+HOST_GDB_CONF_OPTS += --enable-sim
+ifeq ($(BR2_bfin),y)
+HOST_GDB_PRE_CONFIGURE_HOOKS += HOST_GDB_BFIN_SIM_WORKAROUND
+endif
 else
-# don't generate documentation
-GDB_CONF_ENV += ac_cv_prog_MAKEINFO=missing
-HOST_GDB_CONF_ENV += ac_cv_prog_MAKEINFO=missing
+HOST_GDB_CONF_OPTS += --disable-sim
 endif
 
 # legacy $arch-linux-gdb symlink

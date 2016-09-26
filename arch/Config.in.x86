@@ -25,15 +25,23 @@ choice
 	help
 	  Specific CPU variant to use
 
-config BR2_x86_i386
-	bool "i386"
-	depends on !BR2_x86_64
 config BR2_x86_i486
 	bool "i486"
 	depends on !BR2_x86_64
 config BR2_x86_i586
 	bool "i586"
 	depends on !BR2_x86_64
+config BR2_x86_x1000
+	bool "x1000"
+	depends on !BR2_x86_64
+	help
+	  The Intel X1000 is a Pentium class microprocessor in the
+	  Quark (sub-Atom) Product Line. The X1000 has a bug on the
+	  lock prefix requiring that prefix must be stripped at build
+	  time.
+
+	  See https://en.wikipedia.org/wiki/Intel_Quark
+
 config BR2_x86_i686
 	bool "i686"
 	depends on !BR2_x86_64
@@ -199,9 +207,9 @@ config BR2_x86_winchip2
 endchoice
 
 config BR2_ARCH
-	default "i386"		if BR2_x86_i386
 	default "i486"		if BR2_x86_i486
 	default "i586"		if BR2_x86_i586
+	default "i586"		if BR2_x86_x1000
 	default "i586"		if BR2_x86_pentium_mmx
 	default "i586"		if BR2_x86_geode
 	default "i586"		if BR2_x86_c3
@@ -218,6 +226,8 @@ config BR2_ARCH
 	default "i686"		if BR2_x86_nocona && BR2_i386
 	default "i686"		if BR2_x86_core2 && BR2_i386
 	default "i686"		if BR2_x86_corei7 && BR2_i386
+	default "i686"		if BR2_x86_corei7_avx && BR2_i386
+	default "i686"		if BR2_x86_corei7_avx2 && BR2_i386
 	default "i686"		if BR2_x86_atom && BR2_i386
 	default "i686"		if BR2_x86_opteron && BR2_i386
 	default "i686"		if BR2_x86_opteron_sse3 && BR2_i386
@@ -233,13 +243,10 @@ config BR2_ARCH
 config BR2_ENDIAN
 	default "LITTLE"
 
-config BR2_ARCH_HAS_ATOMICS
-	default y if !BR2_x86_i386
-
 config BR2_GCC_TARGET_ARCH
-	default "i386"		if BR2_x86_i386
 	default "i486"		if BR2_x86_i486
 	default "i586"		if BR2_x86_i586
+	default "i586"		if BR2_x86_x1000
 	default "pentium-mmx"	if BR2_x86_pentium_mmx
 	default "i686"		if BR2_x86_i686
 	default "pentiumpro"	if BR2_x86_pentiumpro

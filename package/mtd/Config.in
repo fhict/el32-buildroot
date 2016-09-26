@@ -71,6 +71,9 @@ config BR2_PACKAGE_MTD_MTD_DEBUG
 	bool "mtd_debug"
 	default y
 
+config BR2_PACKAGE_MTD_MTDPART
+	bool "mtdpart"
+
 config BR2_PACKAGE_MTD_NANDDUMP
 	bool "nanddump"
 	default y
@@ -155,5 +158,11 @@ config BR2_PACKAGE_MTD_UBIUPDATEVOL
 config BR2_PACKAGE_MTD_UBIBLOCK
 	bool "ubiblock"
 	default y
+
+config BR2_PACKAGE_MTD_INTEGCK
+	bool "integck"
+	depends on BR2_USE_MMU # fork()
+	help
+	  Install the integck test program.
 
 endif

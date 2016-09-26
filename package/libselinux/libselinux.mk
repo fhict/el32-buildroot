@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-LIBSELINUX_VERSION = 2.1.13
-LIBSELINUX_SITE = https://raw.githubusercontent.com/wiki/SELinuxProject/selinux/files/releases/20130423
+LIBSELINUX_VERSION = 2.5
+LIBSELINUX_SITE = https://raw.githubusercontent.com/wiki/SELinuxProject/selinux/files/releases/20160223
 LIBSELINUX_LICENSE = Public Domain
 LIBSELINUX_LICENSE_FILES = LICENSE
 
@@ -13,9 +13,12 @@ LIBSELINUX_DEPENDENCIES = libsepol pcre
 
 LIBSELINUX_INSTALL_STAGING = YES
 
+# Filter out D_FILE_OFFSET_BITS=64. This fixes errors caused by glibc 2.22.
 LIBSELINUX_MAKE_OPTS = \
 	$(TARGET_CONFIGURE_OPTS) \
-	LDFLAGS="$(TARGET_LDFLAGS) -lpcre -lpthread"
+	CFLAGS="$(filter-out -D_FILE_OFFSET_BITS=64,$(TARGET_CFLAGS))" \
+	LDFLAGS="$(TARGET_LDFLAGS) -lpcre -lpthread" \
+	ARCH=$(KERNEL_ARCH)
 
 define LIBSELINUX_BUILD_CMDS
 	# DESTDIR is needed during the compile to compute library and

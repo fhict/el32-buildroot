@@ -84,3 +84,55 @@ This command will boot a virtualized Soekris. In fact it is running the Soekris 
 
 After booting the real or the virtual Soekris you should be able to login as `root` with password `root`.
 
+How to update this repository
+-----------------------------
+
+This repository can be updated with newer versions of Buildroot as follows.
+
+Clone this repository to your PC:
+```
+git clone https://github.com/fhict/el32-buildroot.git buildroot
+cd buildroot
+git checkout master
+```
+
+Check which branches are available at the official upstream Buildroot repository:
+```
+git remote show upstream
+```
+Choose a particular branch (e.g. master) and synchronize with it:
+```
+git pull -X theirs upstream master
+```
+Enter commit message or accept default one and save it.
+
+Open raspberrypi3_defconfig in your favorite editor (e.g. gedit):
+```
+gedit configs/raspberrypi3_defconfig
+```
+
+Check if following customization lines are present, if not add them:
+```
+# Customization
+BR2_ROOTFS_OVERLAY="board/raspberrypi/fs-overlay"
+BR2_TARGET_GENERIC_HOSTNAME="raspberrypi"
+BR2_TARGET_GENERIC_ISSUE="Welcome to Raspberry Pi!"
+BR2_TARGET_GENERIC_ROOT_PASSWD="root"
+BR2_PACKAGE_BUSYBOX_SHOW_OTHERS=y
+BR2_PACKAGE_LIBUSB=y
+BR2_PACKAGE_DROPBEAR=y
+BR2_PACKAGE_IFPLUGD=y
+```
+
+Also check all the other raspberrypi*_defconfig files and modify them if necessary.
+
+Commit changes
+```
+git commit -a -m "Customizations restored"
+```
+
+If you have cloned this repository on GitHub you could update your clone:
+```
+git push origin master
+```
+

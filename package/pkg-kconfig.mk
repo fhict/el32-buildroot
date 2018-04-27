@@ -11,6 +11,22 @@
 #
 ################################################################################
 
+# Macro to update back the custom (def)config file
+# $(1): file to copy from
+define kconfig-package-update-config
+	@$(if $($(PKG)_KCONFIG_FRAGMENT_FILES), \
+		echo "Unable to perform $(@) when fragment files are set"; exit 1)
+	@$(if $($(PKG)_KCONFIG_DEFCONFIG), \
+		echo "Unable to perform $(@) when using a defconfig rule"; exit 1)
+	$(Q)if [ -d $($(PKG)_KCONFIG_FILE) ]; then \
+		echo "Unable to perform $(@) when $($(PKG)_KCONFIG_FILE) is a directory"; \
+		exit 1; \
+	fi
+	$(Q)mkdir -p $(dir $($(PKG)_KCONFIG_FILE))
+	cp -f $($(PKG)_DIR)/$(1) $($(PKG)_KCONFIG_FILE)
+	$(Q)touch --reference $($(PKG)_DIR)/$($(PKG)_KCONFIG_DOTCONFIG) $($(PKG)_KCONFIG_FILE)
+endef
+
 ################################################################################
 # inner-kconfig-package -- generates the make targets needed to support a
 # kconfig package
@@ -36,6 +52,7 @@ $(2)_KCONFIG_EDITORS ?= menuconfig
 $(2)_KCONFIG_OPTS ?=
 $(2)_KCONFIG_FIXUP_CMDS ?=
 $(2)_KCONFIG_FRAGMENT_FILES ?=
+$(2)_KCONFIG_DOTCONFIG ?= .config
 
 # The config file as well as the fragments could be in-tree, so before
 # depending on them the package should be extracted (and patched) first.
@@ -91,10 +108,10 @@ endef
 # fragments are merged together to .config, after the package has been patched.
 # Since the file could be a defconfig file it needs to be expanded to a
 # full .config first.
-$$($(2)_DIR)/.config: $$($(2)_KCONFIG_FILE) $$($(2)_KCONFIG_FRAGMENT_FILES)
+$$($(2)_DIR)/$$($(2)_KCONFIG_DOTCONFIG): $$($(2)_KCONFIG_FILE) $$($(2)_KCONFIG_FRAGMENT_FILES)
 	$$(Q)$$(if $$($(2)_KCONFIG_DEFCONFIG), \
 		$$($(2)_KCONFIG_MAKE) $$($(2)_KCONFIG_DEFCONFIG), \
-		cp $$($(2)_KCONFIG_FILE) $$(@))
+		$$(INSTALL) -m 0644 -D $$($(2)_KCONFIG_FILE) $$(@))
 	$$(Q)support/kconfig/merge_config.sh -m -O $$(@D) \
 		$$(@) $$($(2)_KCONFIG_FRAGMENT_FILES)
 	$$($(2)_REGEN_DOT_CONFIG)
@@ -102,7 +119,7 @@ $$($(2)_DIR)/.config: $$($(2)_KCONFIG_FILE) $$($(2)_KCONFIG_FRAGMENT_FILES)
 # If _KCONFIG_FILE or _KCONFIG_FRAGMENT_FILES exists, this dependency is
 # already implied, but if we only have a _KCONFIG_DEFCONFIG we have to add
 # it explicitly. It doesn't hurt to always have it though.
-$$($(2)_DIR)/.config: | $(1)-patch
+$$($(2)_DIR)/$$($(2)_KCONFIG_DOTCONFIG): | $(1)-patch
 
 # In order to get a usable, consistent configuration, some fixup may be needed.
 # The exact rules are specified by the package .mk file.
@@ -112,11 +129,17 @@ define $(2)_FIXUP_DOT_CONFIG
 	$$(Q)touch $$($(2)_DIR)/.stamp_kconfig_fixup_done
 endef
 
-$$($(2)_DIR)/.stamp_kconfig_fixup_done: $$($(2)_DIR)/.config
+$$($(2)_DIR)/.stamp_kconfig_fixup_done: $$($(2)_DIR)/$$($(2)_KCONFIG_DOTCONFIG)
 	$$($(2)_FIXUP_DOT_CONFIG)
 
 # Before running configure, the configuration file should be present and fixed
 $$($(2)_TARGET_CONFIGURE): $$($(2)_DIR)/.stamp_kconfig_fixup_done
+
+# Force olddefconfig again on -reconfigure
+$(1)-clean-for-reconfigure: $(1)-clean-kconfig-for-reconfigure
+
+$(1)-clean-kconfig-for-reconfigure:
+	rm -f $$($(2)_DIR)/.stamp_kconfig_fixup_done
 
 # Only enable the foo-*config targets when the package is actually enabled.
 # Note: the variable $(2)_KCONFIG_VAR is not related to the kconfig
@@ -182,7 +205,7 @@ $$($(2)_DIR)/.kconfig_editor_%: $$($(2)_DIR)/.stamp_kconfig_fixup_done
 # which in turn depends on the (newly-set an non-existent) custom
 # defconfig file.
 #
-# Instead, we use an PHONY rule that will catch that situation.
+# Instead, we use a PHONY rule that will catch that situation.
 #
 $(1)-check-configuration-done:
 	@if [ ! -f $$($(2)_DIR)/.stamp_kconfig_fixup_done ]; then \
@@ -197,25 +220,17 @@ $(1)-savedefconfig: $(1)-check-configuration-done
 # Target to copy back the configuration to the source configuration file
 # Even though we could use 'cp --preserve-timestamps' here, the separate
 # cp and 'touch --reference' is used for symmetry with $(1)-update-defconfig.
+$(1)-update-config: PKG=$(2)
 $(1)-update-config: $(1)-check-configuration-done
-	@$$(if $$($(2)_KCONFIG_FRAGMENT_FILES), \
-		echo "Unable to perform $(1)-update-config when fragment files are set"; exit 1)
-	@$$(if $$($(2)_KCONFIG_DEFCONFIG), \
-		echo "Unable to perform $(1)-update-config when using a defconfig rule"; exit 1)
-	cp -f $$($(2)_DIR)/.config $$($(2)_KCONFIG_FILE)
-	touch --reference $$($(2)_DIR)/.config $$($(2)_KCONFIG_FILE)
+	$$(call kconfig-package-update-config,$$($(2)_KCONFIG_DOTCONFIG))
 
 # Note: make sure the timestamp of the stored configuration is not newer than
 # the .config to avoid a useless rebuild. Note that, contrary to
 # $(1)-update-config, the reference for 'touch' is _not_ the file from which
 # we copy.
+$(1)-update-defconfig: PKG=$(2)
 $(1)-update-defconfig: $(1)-savedefconfig
-	@$$(if $$($(2)_KCONFIG_FRAGMENT_FILES), \
-		echo "Unable to perform $(1)-update-defconfig when fragment files are set"; exit 1)
-	@$$(if $$($(2)_KCONFIG_DEFCONFIG), \
-		echo "Unable to perform $(1)-update-defconfig when using a defconfig rule"; exit 1)
-	cp -f $$($(2)_DIR)/defconfig $$($(2)_KCONFIG_FILE)
-	touch --reference $$($(2)_DIR)/.config $$($(2)_KCONFIG_FILE)
+	$$(call kconfig-package-update-config,defconfig)
 
 endif # package enabled
 

@@ -1,2 +1,5 @@
-# Calculated locally
-sha256 0e6f76b2b11449cfa479d2830ac681f4e3bff54a95a9134b069dd5a173b4c3e9 ncmpc-0.24.tar.xz
+# Locally calculated after checking pgp signature
+sha256 ef68a9b67172383ea80ee46579015109433fa058728812d2b0ebede660d85f12  ncmpc-0.29.tar.xz
+
+# Hash for license file:
+sha256 ab15fd526bd8dd18a9e77ebc139656bf4d33e97fc7238cd11bf60e2b9b8666c6  COPYING

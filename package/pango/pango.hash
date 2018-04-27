@@ -1,2 +1,3 @@
-# From http://ftp.gnome.org/pub/GNOME/sources/pango/1.36/pango-1.40.1.sha256sum
-sha256	e27af54172c72b3ac6be53c9a4c67053e16c905e02addcf3a603ceb2005c1a40	pango-1.40.1.tar.xz
+# From http://ftp.gnome.org/pub/GNOME/sources/pango/1.40/pango-1.40.14.sha256sum
+sha256	90af1beaa7bf9e4c52db29ec251ec4fd0a8f2cc185d521ad1f88d01b3a6a17e3	pango-1.40.14.tar.xz
+sha256	d245807f90032872d1438d741ed21e2490e1175dc8aa3afa5ddb6c8e529b58e5	COPYING

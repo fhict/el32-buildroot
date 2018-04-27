@@ -1,4 +1,8 @@
-# This file contains the definition of the toolchain wrapper build commands
+################################################################################
+#
+# definition of the toolchain wrapper build commands
+#
+################################################################################
 
 # We use --hash-style=both to increase the compatibility of the generated
 # binary with older platforms, except for MIPS, where the only acceptable
@@ -26,15 +30,29 @@ ifeq ($(BR2_x86_x1000),y)
 TOOLCHAIN_WRAPPER_ARGS += -DBR_OMIT_LOCK_PREFIX
 endif
 
+# Avoid FPU bug on XBurst CPUs
+ifeq ($(BR2_mips_xburst),y)
+# Before gcc 4.6, -mno-fused-madd was needed, after -ffp-contract is
+# needed
+ifeq ($(BR2_TOOLCHAIN_GCC_AT_LEAST_4_6),y)
+TOOLCHAIN_WRAPPER_ARGS += -DBR_FP_CONTRACT_OFF
+else
+TOOLCHAIN_WRAPPER_ARGS += -DBR_NO_FUSED_MADD
+endif
+endif
+
 ifeq ($(BR2_CCACHE_USE_BASEDIR),y)
 TOOLCHAIN_WRAPPER_ARGS += -DBR_CCACHE_BASEDIR='"$(BASE_DIR)"'
 endif
 
-# For simplicity, build directly into the install location
-define TOOLCHAIN_BUILD_WRAPPER
-	$(Q)mkdir -p $(HOST_DIR)/usr/bin
+define TOOLCHAIN_WRAPPER_BUILD
 	$(HOSTCC) $(HOST_CFLAGS) $(TOOLCHAIN_WRAPPER_ARGS) \
 		-s -Wl,--hash-style=$(TOOLCHAIN_WRAPPER_HASH_STYLE) \
 		toolchain/toolchain-wrapper.c \
-		-o $(HOST_DIR)/usr/bin/toolchain-wrapper
+		-o $(@D)/toolchain-wrapper
+endef
+
+define TOOLCHAIN_WRAPPER_INSTALL
+	$(INSTALL) -D -m 0755 $(@D)/toolchain-wrapper \
+		$(HOST_DIR)/bin/toolchain-wrapper
 endef

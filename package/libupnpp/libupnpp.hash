@@ -1,2 +1,5 @@
-# Hashes from: http://www.lesbonscomptes.com/upmpdcli/downloads/libupnpp-0.14.1.tar.gz.sha256
-sha256  ffb33379f3734419de683b0adca5228e802c64d3960681c15f3a8de7d7e315d1  libupnpp-0.14.1.tar.gz
+# Hashes from: http://www.lesbonscomptes.com/upmpdcli/downloads/libupnpp-0.16.1.tar.gz.sha256
+sha256  d2ab5a4bb6df035ddddd11542bd4631ab7031354259145f07fbc3c56a8f50fac  libupnpp-0.16.1.tar.gz
+
+# Hash for license file:
+sha256  00a89b0d18aacd4114decf79122db87bf35bddaf2bc50e383c9c9f4c263390b2  COPYING

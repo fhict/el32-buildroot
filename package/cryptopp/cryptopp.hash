@@ -1,3 +1,5 @@
-# Locally computed
-sha256  9390670a14170dd0f48a6b6b06f74269ef4b056d4718a1a329f6f6069dc957c9  cryptopp563.zip
-sha256  74b88c2caf7cf843bdc74d3331adaf83e516167cc8eebe66a79612189549cfa4  f707b9ef1688d4429ca6239cf2dc236440974681.patch
+# Hash from: https://www.cryptopp.com/release700.html:
+sha256  a4bc939910edd3d29fb819a6fc0dfdc293f686fa62326f61c56d72d0a366ceb0  cryptopp700.zip
+
+# Hash for license file:
+sha256  fe5f5f187e6e38ac2f833956fc5c4cab2df08797cff07f540e4ee74f12f7ee5b  License.txt

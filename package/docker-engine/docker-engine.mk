@@ -4,70 +4,75 @@
 #
 ################################################################################
 
-DOCKER_ENGINE_VERSION = v1.12.0
+DOCKER_ENGINE_VERSION = v17.05.0-ce
+DOCKER_ENGINE_COMMIT = 89658bed64c2a8fe05a978e5b87dbec409d57a0f
 DOCKER_ENGINE_SITE = $(call github,docker,docker,$(DOCKER_ENGINE_VERSION))
 
 DOCKER_ENGINE_LICENSE = Apache-2.0
 DOCKER_ENGINE_LICENSE_FILES = LICENSE
 
-DOCKER_ENGINE_DEPENDENCIES = host-go
+DOCKER_ENGINE_DEPENDENCIES = host-go host-pkgconf
 
-DOCKER_ENGINE_GOPATH = "$(@D)/vendor"
-DOCKER_ENGINE_MAKE_ENV = $(HOST_GO_TARGET_ENV) \
-	CGO_ENABLED=1 \
-	CGO_NO_EMULATION=1 \
-	GOBIN="$(@D)/bin" \
-	GOPATH="$(DOCKER_ENGINE_GOPATH)"
-
-DOCKER_ENGINE_GLDFLAGS = \
+DOCKER_ENGINE_LDFLAGS = \
 	-X main.GitCommit=$(DOCKER_ENGINE_VERSION) \
 	-X main.Version=$(DOCKER_ENGINE_VERSION)
 
-ifeq ($(BR2_STATIC_LIBS),y)
-DOCKER_ENGINE_GLDFLAGS += -extldflags '-static'
+ifeq ($(BR2_PACKAGE_DOCKER_ENGINE_STATIC_CLIENT),y)
+DOCKER_ENGINE_LDFLAGS += -extldflags '-static'
 endif
 
-DOCKER_ENGINE_BUILD_TAGS = cgo exclude_graphdriver_zfs autogen
-DOCKER_ENGINE_BUILD_TARGETS = docker
+DOCKER_ENGINE_TAGS = cgo exclude_graphdriver_zfs autogen
+DOCKER_ENGINE_BUILD_TARGETS = cmd/docker
 
 ifeq ($(BR2_PACKAGE_LIBSECCOMP),y)
-DOCKER_ENGINE_BUILD_TAGS += seccomp
+DOCKER_ENGINE_TAGS += seccomp
 DOCKER_ENGINE_DEPENDENCIES += libseccomp
 endif
 
+ifeq ($(BR2_INIT_SYSTEMD),y)
+DOCKER_ENGINE_TAGS += journald
+DOCKER_ENGINE_DEPENDENCIES += systemd
+endif
+
 ifeq ($(BR2_PACKAGE_DOCKER_ENGINE_DAEMON),y)
-DOCKER_ENGINE_BUILD_TAGS += daemon
-DOCKER_ENGINE_BUILD_TARGETS += dockerd
+DOCKER_ENGINE_TAGS += daemon
+DOCKER_ENGINE_BUILD_TARGETS += cmd/dockerd
 endif
 
 ifeq ($(BR2_PACKAGE_DOCKER_ENGINE_EXPERIMENTAL),y)
-DOCKER_ENGINE_BUILD_TAGS += experimental
+DOCKER_ENGINE_TAGS += experimental
 endif
 
 ifeq ($(BR2_PACKAGE_DOCKER_ENGINE_DRIVER_BTRFS),y)
 DOCKER_ENGINE_DEPENDENCIES += btrfs-progs
 else
-DOCKER_ENGINE_BUILD_TAGS += exclude_graphdriver_btrfs
+DOCKER_ENGINE_TAGS += exclude_graphdriver_btrfs
 endif
 
 ifeq ($(BR2_PACKAGE_DOCKER_ENGINE_DRIVER_DEVICEMAPPER),y)
 DOCKER_ENGINE_DEPENDENCIES += lvm2
 else
-DOCKER_ENGINE_BUILD_TAGS += exclude_graphdriver_devicemapper
+DOCKER_ENGINE_TAGS += exclude_graphdriver_devicemapper
 endif
 
 ifeq ($(BR2_PACKAGE_DOCKER_ENGINE_DRIVER_VFS),y)
 DOCKER_ENGINE_DEPENDENCIES += gvfs
 else
-DOCKER_ENGINE_BUILD_TAGS += exclude_graphdriver_vfs
+DOCKER_ENGINE_TAGS += exclude_graphdriver_vfs
 endif
 
-define DOCKER_ENGINE_CONFIGURE_CMDS
-	ln -fs $(@D) $(DOCKER_ENGINE_GOPATH)/src/github.com/docker/docker
+DOCKER_ENGINE_INSTALL_BINS = $(notdir $(DOCKER_ENGINE_BUILD_TARGETS))
+
+define DOCKER_ENGINE_RUN_AUTOGEN
 	cd $(@D) && \
-		GITCOMMIT="unknown" BUILDTIME="$$(date)" VERSION="$(DOCKER_ENGINE_VERSION)" \
+		GITCOMMIT="$$(echo $(DOCKER_ENGINE_COMMIT) | head -c7)" \
+		BUILDTIME="$$(date)" \
+		VERSION="$(patsubst v%,%,$(DOCKER_ENGINE_VERSION))" \
+		PKG_CONFIG="$(PKG_CONFIG_HOST_BINARY)" $(TARGET_MAKE_ENV) \
 		bash ./hack/make/.go-autogen
 endef
+
+DOCKER_ENGINE_POST_CONFIGURE_HOOKS += DOCKER_ENGINE_RUN_AUTOGEN
 
 ifeq ($(BR2_PACKAGE_DOCKER_ENGINE_DAEMON),y)
 
@@ -87,21 +92,4 @@ endef
 
 endif
 
-define DOCKER_ENGINE_BUILD_CMDS
-	$(foreach target,$(DOCKER_ENGINE_BUILD_TARGETS), \
-		cd $(@D); $(DOCKER_ENGINE_MAKE_ENV) \
-		$(HOST_DIR)/usr/bin/go build -v \
-			-o $(@D)/bin/$(target) \
-			-tags "$(DOCKER_ENGINE_BUILD_TAGS)" \
-			-ldflags "$(DOCKER_ENGINE_GLDFLAGS)" \
-			./cmd/$(target)
-	)
-endef
-
-define DOCKER_ENGINE_INSTALL_TARGET_CMDS
-	$(foreach target,$(DOCKER_ENGINE_BUILD_TARGETS), \
-		$(INSTALL) -D -m 0755 $(@D)/bin/$(target) $(TARGET_DIR)/usr/bin/$(target)
-	)
-endef
-
-$(eval $(generic-package))
+$(eval $(golang-package))

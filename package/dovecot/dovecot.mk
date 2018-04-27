@@ -4,13 +4,16 @@
 #
 ################################################################################
 
-DOVECOT_VERSION_MAJOR = 2.2
-DOVECOT_VERSION = $(DOVECOT_VERSION_MAJOR).25
+DOVECOT_VERSION_MAJOR = 2.3
+DOVECOT_VERSION = $(DOVECOT_VERSION_MAJOR).1
 DOVECOT_SITE = http://www.dovecot.org/releases/$(DOVECOT_VERSION_MAJOR)
 DOVECOT_INSTALL_STAGING = YES
-DOVECOT_LICENSE = LGPLv2.1
+DOVECOT_LICENSE = LGPL-2.1, MIT, Public Domain, BSD-3-Clause, Unicode-DFS-2015
 DOVECOT_LICENSE_FILES = COPYING COPYING.LGPL COPYING.MIT
-DOVECOT_DEPENDENCIES = host-pkgconf $(if $(BR2_PACKAGE_LIBICONV),libiconv)
+DOVECOT_DEPENDENCIES = \
+	host-pkgconf \
+	$(if $(BR2_PACKAGE_LIBICONV),libiconv) \
+	openssl
 
 DOVECOT_CONF_ENV = \
 	RPCGEN=__disable_RPCGEN_rquota \
@@ -27,7 +30,7 @@ DOVECOT_CONF_ENV = \
 	lib_cv___va_copy=yes \
 	lib_cv_va_val_copy=yes
 
-DOVECOT_CONF_OPTS = --without-docs
+DOVECOT_CONF_OPTS = --without-docs --with-ssl=openssl
 
 ifeq ($(BR2_PACKAGE_DOVECOT_MYSQL)$(BR2_PACKAGE_DOVECOT_SQLITE),)
 DOVECOT_CONF_OPTS += --without-sql
@@ -54,19 +57,19 @@ else
 DOVECOT_CONF_OPTS += --without-libcap
 endif
 
+ifeq ($(BR2_PACKAGE_LIBSODIUM),y)
+DOVECOT_CONF_OPTS += --with-sodium
+DOVECOT_DEPENDENCIES += libsodium
+else
+DOVECOT_CONF_OPTS += --without-sodium
+endif
+
 ifeq ($(BR2_PACKAGE_DOVECOT_MYSQL),y)
 DOVECOT_CONF_ENV += MYSQL_CONFIG="$(STAGING_DIR)/usr/bin/mysql_config"
 DOVECOT_CONF_OPTS += --with-mysql
 DOVECOT_DEPENDENCIES += mysql
 else
 DOVECOT_CONF_OPTS += --without-mysql
-endif
-
-ifeq ($(BR2_PACKAGE_DOVECOT_OPENSSL),y)
-DOVECOT_CONF_OPTS += --with-ssl=openssl
-DOVECOT_DEPENDENCIES += openssl
-else
-DOVECOT_CONF_OPTS += --with-ssl=no
 endif
 
 ifeq ($(BR2_PACKAGE_DOVECOT_SQLITE),y)

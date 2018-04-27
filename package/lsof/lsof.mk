@@ -32,7 +32,7 @@ endif
 
 # The .tar.bz2 contains another .tar, which contains the source code.
 define LSOF_EXTRACT_CMDS
-	$(call suitable-extractor,$(LSOF_SOURCE)) $(DL_DIR)/$(LSOF_SOURCE) | \
+	$(call suitable-extractor,$(LSOF_SOURCE)) $(LSOF_DL_DIR)/$(LSOF_SOURCE) | \
 		$(TAR) -O $(TAR_OPTIONS) - lsof_$(LSOF_VERSION)/lsof_$(LSOF_VERSION)_src.tar | \
 	$(TAR) --strip-components=1 -C $(LSOF_DIR) $(TAR_OPTIONS) -
 endef
@@ -47,7 +47,7 @@ define LSOF_CONFIGURE_CMDS
 endef
 
 define LSOF_BUILD_CMDS
-	$(MAKE) $(TARGET_CONFIGURE_OPTS) DEBUG="$(TARGET_CFLAGS)" -C $(@D)
+	$(TARGET_MAKE_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) DEBUG="$(TARGET_CFLAGS)" -C $(@D)
 endef
 
 define LSOF_INSTALL_TARGET_CMDS

@@ -1,6 +1,6 @@
 el32-buildroot
 ==============
-Buildroot fork for Embedded Linux course.
+[Buildroot](https://buildroot.org/) fork for Embedded Linux course.
 
 This repository contains support for building an Embedded Linux distribution (kernel, rootfilesystem) and a crosscompilation toolchain.
 

@@ -241,14 +241,11 @@ check_glibc = \
 # $2: cross-readelf path
 check_musl = \
 	__CROSS_CC=$(strip $1) ; \
-	__CROSS_READELF=$(strip $2) ; \
-	echo 'void main(void) {}' | $${__CROSS_CC} -x c -o $(BUILD_DIR)/.br-toolchain-test.tmp - >/dev/null 2>&1; \
-	if ! $${__CROSS_READELF} -l $(BUILD_DIR)/.br-toolchain-test.tmp 2> /dev/null | grep 'program interpreter: /lib/ld-musl' -q; then \
-		rm -f $(BUILD_DIR)/.br-toolchain-test.tmp*; \
+	libc_a_path=`$${__CROSS_CC} -print-file-name=libc.a` ; \
+	if ! strings $${libc_a_path} | grep -q MUSL_LOCPATH ; then \
 		echo "Incorrect selection of the C library" ; \
 		exit -1; \
-	fi ; \
-	rm -f $(BUILD_DIR)/.br-toolchain-test.tmp*
+	fi
 
 #
 # Check the conformity of Buildroot configuration with regard to the
@@ -363,6 +360,24 @@ check_fortran = \
 	rm -f $${__o}* \
 
 #
+#
+# Check that the external toolchain supports OpenMP
+#
+# $1: cross-gcc path
+#
+check_openmp = \
+	__CROSS_CC=$(strip $1) ; \
+	__o=$(BUILD_DIR)/.br-toolchain-test-openmp.tmp ; \
+	printf '\#include <omp.h>\nint main(void) { return omp_get_thread_num(); }' | \
+	$${__CROSS_CC} -fopenmp -x c -o $${__o} - ; \
+	if test $$? -ne 0 ; then \
+		rm -f $${__o}* ; \
+		echo "OpenMP support is selected but is not available in external toolchain"; \
+		exit 1 ; \
+	fi ; \
+	rm -f $${__o}* \
+
+#
 # Check that the cross-compiler given in the configuration exists
 #
 # $1: cross-gcc path
@@ -418,6 +433,7 @@ check_unusable_toolchain = \
 # Check if the toolchain has SSP (stack smashing protector) support
 #
 # $1: cross-gcc path
+# $2: gcc ssp option
 #
 check_toolchain_ssp = \
 	__CROSS_CC=$(strip $1) ; \
@@ -430,6 +446,13 @@ check_toolchain_ssp = \
 		echo "SSP support not available in this toolchain, please disable BR2_TOOLCHAIN_EXTERNAL_HAS_SSP" ; \
 		exit 1 ; \
 	fi ; \
+	__SSP_OPTION=$(2); \
+	if [ -n "$${__SSP_OPTION}" ] ; then \
+		if ! echo 'void main(){}' | $${__CROSS_CC} -Werror $${__SSP_OPTION} -x c - -o $(BUILD_DIR)/.br-toolchain-test.tmp >/dev/null 2>&1 ; then \
+			echo "SSP option $${__SSP_OPTION} not available in this toolchain, please select another SSP level" ; \
+			exit 1 ; \
+		fi; \
+	fi; \
 	rm -f $(BUILD_DIR)/.br-toolchain-test.tmp*
 
 #

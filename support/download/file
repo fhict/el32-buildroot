@@ -2,7 +2,6 @@
 
 # We want to catch any unexpected failure, and exit immediately
 set -e
-set -x
 
 # Download helper for cp, to be called from the download wrapper script
 #
@@ -40,4 +39,4 @@ _localfiles() {
     eval ${LOCALFILES} "${@}"
 }
 
-_localfiles ${verbose} "'${dir}${file}'" "'${output}'"
+_localfiles ${verbose} "'${dir##file://}/${file}'" "'${output}'"

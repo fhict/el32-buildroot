@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-LIBUV_VERSION = v1.20.1
-LIBUV_SITE = $(call github,libuv,libuv,$(LIBUV_VERSION))
+LIBUV_VERSION = 1.32.0
+LIBUV_SITE = $(call github,libuv,libuv,v$(LIBUV_VERSION))
 LIBUV_DEPENDENCIES = host-pkgconf
 LIBUV_INSTALL_STAGING = YES
 LIBUV_AUTORECONF = YES
